@@ -16,6 +16,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +44,6 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
@@ -637,16 +637,13 @@ private fun ForumFAB(
     val buttonAlignment = if (position == FabPosition.Start) Alignment.TopStart else Alignment.TopEnd
 
     // 低栏那套配色: 中性底板 + 实时模糊, 实心的 primary 会把帖子压在键底下影响阅读.
-    // 有 haze 时底板自身透明, 模糊层已经带了 surfaceContainerHighest 的中性色调;
-    // 没有 haze (半透明主题/减弱效果) 时退回一块半透明中性板.
+    // 底板自己画 (不用 FAB 的 containerColor): FAB 自己的形状是圆角方形, 贴在正文上就是一块 tab;
+    // 圆键才像个键. 有模糊时只补薄薄一层中性色, 没模糊 (半透明主题/减弱效果) 时得靠这层板撑住图标.
     val hazeState = LocalHazeState.current
-    val plateColor = if (hazeState != null) {
-        Color.Transparent
-    } else {
-        MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f)
-    }
+    val plateColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(
+        alpha = if (hazeState != null) 0.35f else 0.86f
+    )
     val plateContentColor = MaterialTheme.colorScheme.onSurface
-    val plateShape = FloatingActionButtonDefaults.shape
 
     BackHandler(enabled = expanded) { onExpandChanged(false) }
 
@@ -676,17 +673,18 @@ private fun ForumFAB(
                         checked = expanded,
                         onCheckedChange = { click() },
                         contentAlignment = buttonAlignment,
-                        containerColor = { plateColor },
-                        // 模糊层是方的, 得按键自己的形状裁一圈; 阴影由本层出, 内部那层被裁掉了
+                        containerColor = { Color.Transparent },
+                        // 底板画在本层: 裁圆 + 模糊 + 中性色, 阴影由本层出 (内部那层阴影被裁掉了)
                         modifier = Modifier
                             .graphicsLayer {
-                                shape = plateShape
+                                shape = CircleShape
                                 clip = true
                                 shadowElevation = ForumFabShadowElevation.toPx()
                             }
                             .withNonNull(hazeState) {
                                 Modifier.defaultHazeEffect(style = navigationHazeStyle)
-                            },
+                            }
+                            .background(color = plateColor, shape = CircleShape),
                     ) {
                         ProvideContentColor(plateContentColor) {
                             // Keep gestures on the content while the container animates like the
