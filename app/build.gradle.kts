@@ -267,6 +267,9 @@ dependencies {
 
     implementation(libs.haze.blur)
 
+    // 荣耀随心握：单手握持时底栏/悬浮键靠向那只手（非荣耀机型运行时会直接返回不支持）
+    implementation("com.hihonor.mcs:smartgripkit:1.0.0.300")
+
     // Coil
     implementation(libs.bundles.coil3)
 

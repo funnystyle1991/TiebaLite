@@ -137,3 +137,12 @@
 -keepclassmembers,allowobfuscation class * {
  @com.google.gson.annotations.SerializedName <fields>;
 }
+
+# 荣耀随心握 SDK：它引用的 HWExtDeviceManager / SystemPropertiesEx / HwFoldScreenManagerEx
+# 都是荣耀框架里的隐藏类，标准 android.jar 没有，R8 会报 Missing class；
+# 真机由系统提供，非荣耀机型根本走不到那条分支
+-dontwarn com.hihonor.android.**
+# 只 dontwarn 会留下坑：R8 不认得那条继承链，会把 SDK 里事件监听父类的方法一起改名，
+# 框架按原名派发 → 正式版 AbstractMethodError。框架回调全凭方法名匹配，整包 keep。
+-keep class com.hihonor.smartgripkit.** { *; }
+-keep class * extends com.hihonor.smartgripkit.SmartGripEventListener { *; }

@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.ui.page.main.gripShift
 
 /**
  * Represents the container color for this button, depending on [enabled].
@@ -267,7 +268,8 @@ fun DefaultBackToTopFAB(
             PlainTooltip { Text(text = contentDescription) }
         },
         state = rememberTooltipState(),
-        modifier = modifier,
+        // 随心握: 单手时往握持那侧挪一档 (极限就是它自带的 16dp 边距), 和底栏同一个方向
+        modifier = modifier.gripShift(),
         // 长按被赋予新语义时禁用长按 tooltip, 避免手势冲突
         hasAction = onLongClick == null,
     ) {

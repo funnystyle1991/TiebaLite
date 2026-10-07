@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
@@ -310,7 +311,7 @@ object FloatingNavigationBarOverride : ShortNavigationBarOverride {
         val itemCount = LocalMainNavigationItemCount.current
         val widthFraction = (itemCount.toFloat() / MaxFloatingNavigationItems).coerceIn(0f, 1f)
         CompositionLocalProvider(LocalContentColor provides contentColor) {
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
@@ -318,6 +319,8 @@ object FloatingNavigationBarOverride : ShortNavigationBarOverride {
             ) {
                 Row(
                     modifier = Modifier
+                        // 随心握: 整条靠向握持的那只手
+                        .gripFollow(availableWidthPx = constraints.maxWidth)
                         .fillMaxWidth(widthFraction)
                         .floatingNavBarContainer(
                             height = NavigationBarHeight,
@@ -345,7 +348,7 @@ object PiliFloatingNavigationBarOverride : ShortNavigationBarOverride {
     override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
         val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
         CompositionLocalProvider(LocalContentColor provides contentColor) {
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
@@ -353,6 +356,8 @@ object PiliFloatingNavigationBarOverride : ShortNavigationBarOverride {
             ) {
                 Layout(
                     modifier = Modifier
+                        // 随心握: 整条靠向握持的那只手; 可摆放宽度就是上面这个容器扣掉左右留白后的宽度
+                        .gripFollow(availableWidthPx = constraints.maxWidth)
                         .floatingNavBarContainer(
                             height = NavigationBarHeight,
                             screenOffset = floatingNavigationBarCompactScreenOffset,
@@ -546,18 +551,29 @@ object FloatingIconNavigationBarOverride : ShortNavigationBarOverride {
     override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
         val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
         CompositionLocalProvider(LocalContentColor provides contentColor) {
-            Row(
+            BoxWithConstraints(
                 modifier = Modifier
-                    .floatingNavBarContainer(
-                        height = FloatingIconNavigationBarHeight,
-                        screenOffset = floatingNavigationBarCompactScreenOffset,
-                        isTransitionActive = { animatedVisibilityScope?.transition?.isRunning == true }
-                    )
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                content()
+                Row(
+                    modifier = Modifier
+                        // 随心握: 整条靠向握持的那只手
+                        .gripFollow(availableWidthPx = constraints.maxWidth)
+                        .floatingNavBarContainer(
+                            height = FloatingIconNavigationBarHeight,
+                            screenOffset = floatingNavigationBarCompactScreenOffset,
+                            isTransitionActive = {
+                                animatedVisibilityScope?.transition?.isRunning == true
+                            }
+                        )
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    content()
+                }
             }
         }
     }

@@ -115,7 +115,7 @@ import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumType
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
-import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
+import com.huanchengfly.tieba.post.ui.page.main.gripShift
 import com.huanchengfly.tieba.post.ui.utils.backToTopFabPosition
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -219,7 +219,6 @@ fun ForumPage(
     val pagerState = rememberPagerState { forumTabs.size }
     val listStates by rememberUpdatedState(rememberPagerListStates(pagerState.pageCount))
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val scrollOrientationConnection = rememberScrollOrientationConnection()
 
     viewModel.uiEvent.collectUiEventWithLifecycle {
         val message = when (it) {
@@ -435,10 +434,11 @@ fun ForumPage(
         floatingActionButtonPosition = fabPosition,
         floatingActionButton = {
             if (forumData == null) return@BlurScaffold
-            // FAB visibility: no error, scrolling forward, pager is not scrolling
+            // FAB 常驻: 只在出错时收起. 原来还要求"正在向下滚", 于是往上翻帖子时键就没了,
+            // 想刷新得先往下滚一格. 切页 (pager) 期间仍然收起, 免得按到上一个 tab 的刷新
             val fabVisible by remember {
                 derivedStateOf {
-                    uiState.error == null && scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling
+                    uiState.error == null && !pagerState.isScrolling
                 }
             }
 
@@ -463,7 +463,6 @@ fun ForumPage(
         StateScreen(
             modifier = Modifier
                 .fillMaxSize()
-                .nestedScroll(connection = scrollOrientationConnection)
                 .nestedScroll(connection = scrollBehavior.nestedScrollConnection),
             isLoading = forumData == null,
             error = uiState.error,
@@ -624,7 +623,8 @@ private fun ForumFAB(
 
     AnimatedVisibility(
         visible = visible,
-        modifier = modifier,
+        // 随心握: 单手时整摞 (键 + 展开的菜单) 往握持那侧挪一档, 和底栏同一个方向
+        modifier = modifier.gripShift(),
         enter = fadeIn() + slideInHorizontally { it },
         exit = fadeOut() + slideOutHorizontally { it }
     ) {

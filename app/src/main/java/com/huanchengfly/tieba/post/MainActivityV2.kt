@@ -79,9 +79,12 @@ import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.AppLevelNavigationRail
 import com.huanchengfly.tieba.post.ui.page.main.AppLevelRailWidth
+import com.huanchengfly.tieba.post.ui.page.main.LocalGripAvailable
+import com.huanchengfly.tieba.post.ui.page.main.LocalGripBias
 import com.huanchengfly.tieba.post.ui.page.main.LocalMainNavState
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
 import com.huanchengfly.tieba.post.ui.page.main.MainNavState
+import com.huanchengfly.tieba.post.ui.page.main.rememberGripState
 import com.huanchengfly.tieba.post.ui.page.RootNavGraph
 import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN
 import com.huanchengfly.tieba.post.ui.page.settings.theme.TranslucentThemeBackground
@@ -288,7 +291,15 @@ class MainActivityV2 : BaseComposeActivity() {
                 val showAppLevelRail =
                     !isCompact && currentRootEntry?.destination?.hasRoute<Destination.Welcome>() != true
 
-                CompositionLocalProvider(LocalMainNavState provides mainNavState) {
+                // 随心握: 单手握持时悬浮底栏 / 悬浮键整条靠向那只手.
+                // 事件只在应用级注册一次, 各悬浮件读同一份偏置, 免得每处一个监听器各自漂移
+                val grip = rememberGripState()
+
+                CompositionLocalProvider(
+                    LocalMainNavState provides mainNavState,
+                    LocalGripBias provides grip.bias,
+                    LocalGripAvailable provides grip.available,
+                ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         Box(
                             modifier = Modifier

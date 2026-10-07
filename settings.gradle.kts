@@ -17,6 +17,8 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://jitpack.io")
+        // 荣耀随心握 SDK（底栏/悬浮键跟手）
+        maven("https://developer.hihonor.com/repo")
     }
 }
 
