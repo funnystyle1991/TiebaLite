@@ -103,7 +103,6 @@ import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
-import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
 import com.huanchengfly.tieba.post.ui.models.forum.GoodClassify
@@ -135,7 +134,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultToggleFloatingActionButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.LinearProgressIndicator
-import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.MoreMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.OutlinedIconTextButton
@@ -636,13 +634,12 @@ private fun ForumFAB(
     val horizontalAlignment = if (position == FabPosition.Start) Alignment.Start else Alignment.End
     val buttonAlignment = if (position == FabPosition.Start) Alignment.TopStart else Alignment.TopEnd
 
-    // 低栏那套: 用底栏自己的基调 (navigationContainer 就是 surfaceContainer) + 一点透.
-    // 上一版脏是因为基调就选暗了: surfaceContainerHighest 比页面底暗 ~17 档, 铺在键上自己就是一块灰斑
-    // (真机实测键心 222 / 页面底 248). 底栏在同一路内容上实测渲染成 #F8F7FC, 几乎跟页面底同色.
-    // 模糊走 ThreadNavigationDock 那套被验过的 defaultHazeEffect (默认风格, 不带 tint);
-    // 不用 navigationHazeStyle —— 它自带 0.7 灰调 + 噪点, 56dp 的小圆采样到的只有上下两行字.
-    // 板子给 0.85: 小键经不起真透, 透出一点影子就够了, 图标才立得住.
-    val hazeState = LocalHazeState.current
+    // 低栏那套基调 (navigationContainer 就是 surfaceContainer) + 一点透, 不挂模糊.
+    // 基调别再选暗: surfaceContainerHighest 比页面底暗十几档, 铺在小圆上自己就是一块灰斑.
+    // 也不挂 haze: TbHazeState 的 inputScale 是 Fixed(0.033f) —— 底栏那种大条够用, 56dp 的键换算是
+    // 136px * 0.033 ~= 4px 的纹理再拉回 136px, 双线性放大出来是一团边缘发虚的亮块, 形状跟着纹理走
+    // 不跟着圆走 (真机截图实测: 圆里一个八边形亮斑把粗体字盖住, 圈外反而是正常的透字灰).
+    // 键太小, 模糊只会糊成一坨; 透出一点影子的中性板就够了.
     val plateColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.85f)
     val plateContentColor = MaterialTheme.colorScheme.onSurface
 
@@ -675,20 +672,12 @@ private fun ForumFAB(
                         onCheckedChange = { click() },
                         contentAlignment = buttonAlignment,
                         containerColor = { Color.Transparent },
-                        // 内部那层容器的默认形状是 16dp 圆角方形 (FabInitialCornerRadius), 展开成关闭键时才变圆.
-                        // 它的 containerColor 已经被我置透, 但它的 6dp 阴影还画在方角上 —— 底板裁成圆之后,
-                        // 圆里就剩一块浅方斑 (真机截图实测). 直接把半径钉成半径=半边长, 全程是圆, 方斑就没了.
-                        containerSize = { ForumFabSize },
-                        containerCornerRadius = { ForumFabSize / 2 },
-                        // 底板画在本层: 裁圆 + 模糊 + 中性色, 阴影由本层出 (内部那层阴影被裁掉了)
+                        // 底板画在本层: 裁圆 + 中性色, 阴影由本层出 (内部那层的阴影被裁掉了)
                         modifier = Modifier
                             .graphicsLayer {
                                 shape = CircleShape
                                 clip = true
                                 shadowElevation = ForumFabShadowElevation.toPx()
-                            }
-                            .withNonNull(hazeState) {
-                                Modifier.defaultHazeEffect()
                             }
                             .background(color = plateColor, shape = CircleShape),
                     ) {
