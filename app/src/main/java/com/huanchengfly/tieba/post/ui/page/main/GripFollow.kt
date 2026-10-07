@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hihonor.smartgripkit.SmartGripEventListener
 import com.hihonor.smartgripkit.SmartGripEventManager
@@ -34,8 +35,8 @@ private const val GRIP_TAG = "GripFollow"
 /** 底栏要挪得出来, 左右至少各留这么多余量 */
 internal val GripMinSlide = 32.dp
 
-/** 悬浮键能挪的极限就是它自带的边距, 再多就出屏了 */
-internal val GripFabShift = 16.dp
+/** 悬浮件贴在屏幕边上时自带的留白 (Scaffold 的 FAB 槽位和卡片横向留白都是这个数) */
+internal val GripEdgeInset = 16.dp
 
 @Stable
 internal class GripState(
@@ -142,19 +143,32 @@ internal fun Modifier.gripFollow(availableWidthPx: Int): Modifier {
 }
 
 /**
- * 悬浮键的随心握: 和底栏同一个方向、同一条弹簧往握持那侧挪一档.
+ * 悬浮键的随心握: 左手握时把整只键从它贴着的右边挪到屏幕左边, 和底栏同一条弹簧.
  *
- * 键不跟着走, 单手时就比底栏更难够到.
+ * 只挪一档 (键自带的那点边距) 等于没动 —— 键贴在右手边, 左手握时要够到它得跨过整块屏, 所以这里
+ * 走满行程挪到对侧, 到位后留白跟原来右边那份一样多, 出不了屏.
+ *
+ * 右手握时原地不动: 键本来就在右手边. 键已经摆在 Start 边 (宽屏/折叠屏的 FAB 位置) 时同样不动 ——
+ * 往右挪等于挪出屏幕.
+ *
+ * @param inset 键在右边自带的留白, 挪到左边后照抄一份
+ * @param atEnd 键是否贴 End 边 (LTR 的右边); 调用方按自己的摆放位置传, false 时这个修饰符不做事
  */
 @Composable
-internal fun Modifier.gripShift(): Modifier {
-    if (!LocalGripAvailable.current) return this
+internal fun Modifier.gripDock(inset: Dp, atEnd: Boolean = true): Modifier {
+    if (!LocalGripAvailable.current || !atEnd) return this
     val bias = LocalGripBias.current
-    val maxPx = with(LocalDensity.current) { GripFabShift.toPx() }
+    val insetPx = with(LocalDensity.current) { inset.toPx() }
     return this then Modifier.layout { measurable, constraints ->
         val placeable = measurable.measure(constraints)
         layout(placeable.width, placeable.height) {
-            placeable.placeRelative(x = (bias() * maxPx).roundToInt(), y = 0)
+            if (constraints.hasBoundedWidth) {
+                val travel =
+                    (constraints.maxWidth - placeable.width - insetPx * 2f).coerceAtLeast(0f)
+                placeable.placeRelative(x = (travel * bias().coerceAtMost(0f)).roundToInt(), y = 0)
+            } else {
+                placeable.placeRelative(0, 0)
+            }
         }
     }
 }

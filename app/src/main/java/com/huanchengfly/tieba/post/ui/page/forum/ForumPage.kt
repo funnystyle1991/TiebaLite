@@ -115,7 +115,8 @@ import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumType
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
-import com.huanchengfly.tieba.post.ui.page.main.gripShift
+import com.huanchengfly.tieba.post.ui.page.main.GripEdgeInset
+import com.huanchengfly.tieba.post.ui.page.main.gripDock
 import com.huanchengfly.tieba.post.ui.utils.backToTopFabPosition
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -623,8 +624,8 @@ private fun ForumFAB(
 
     AnimatedVisibility(
         visible = visible,
-        // 随心握: 单手时整摞 (键 + 展开的菜单) 往握持那侧挪一档, 和底栏同一个方向
-        modifier = modifier.gripShift(),
+        // 随心握: 左手握时整摞 (键 + 展开的菜单) 从右边挪到左边; 宽屏上键本来就摆在 Start 边, 方向跟着翻
+        modifier = modifier.gripDock(GripEdgeInset, atEnd = position != FabPosition.Start),
         enter = fadeIn() + slideInHorizontally { it },
         exit = fadeOut() + slideOutHorizontally { it }
     ) {

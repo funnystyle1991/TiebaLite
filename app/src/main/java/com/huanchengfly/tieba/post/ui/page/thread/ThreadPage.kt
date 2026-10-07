@@ -146,6 +146,8 @@ import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.setResult
+import com.huanchengfly.tieba.post.ui.page.main.GripEdgeInset
+import com.huanchengfly.tieba.post.ui.page.main.gripDock
 import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStoreUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -1016,6 +1018,8 @@ fun ThreadPage(
                                                         CardHorizontalSpacing
                                                 )
                                     )
+                                    // 随心握: 左手握时整只坞从右边挪到左边 (右手握时它本来就在右手边)
+                                    .gripDock(GripEdgeInset)
                                     .padding(end = CardHorizontalSpacing),
                                 horizontal = false,
                                 singleKey = LocalUISettings.current.commentNavSingleKey,

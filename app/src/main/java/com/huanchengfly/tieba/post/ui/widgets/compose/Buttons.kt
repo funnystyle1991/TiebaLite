@@ -30,6 +30,7 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -77,7 +78,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.page.main.gripShift
+import com.huanchengfly.tieba.post.ui.page.main.GripEdgeInset
+import com.huanchengfly.tieba.post.ui.page.main.gripDock
+import com.huanchengfly.tieba.post.ui.utils.backToTopFabPosition
 
 /**
  * Represents the container color for this button, depending on [enabled].
@@ -268,8 +271,12 @@ fun DefaultBackToTopFAB(
             PlainTooltip { Text(text = contentDescription) }
         },
         state = rememberTooltipState(),
-        // 随心握: 单手时往握持那侧挪一档 (极限就是它自带的 16dp 边距), 和底栏同一个方向
-        modifier = modifier.gripShift(),
+        // 随心握: 左手握时整只键从右边挪到左边 (右手握时它本来就在右手边).
+        // 宽屏/折叠屏上各页把 FAB 摆在 Start 边, 那边没路可走, 所以方向跟着 FAB 位置翻.
+        modifier = modifier.gripDock(
+            inset = GripEdgeInset,
+            atEnd = backToTopFabPosition() != FabPosition.Start,
+        ),
         // 长按被赋予新语义时禁用长按 tooltip, 避免手势冲突
         hasAction = onLongClick == null,
     ) {
