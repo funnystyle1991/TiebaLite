@@ -675,6 +675,11 @@ private fun ForumFAB(
                         onCheckedChange = { click() },
                         contentAlignment = buttonAlignment,
                         containerColor = { Color.Transparent },
+                        // 内部那层容器的默认形状是 16dp 圆角方形 (FabInitialCornerRadius), 展开成关闭键时才变圆.
+                        // 它的 containerColor 已经被我置透, 但它的 6dp 阴影还画在方角上 —— 底板裁成圆之后,
+                        // 圆里就剩一块浅方斑 (真机截图实测). 直接把半径钉成半径=半边长, 全程是圆, 方斑就没了.
+                        containerSize = { ForumFabSize },
+                        containerCornerRadius = { ForumFabSize / 2 },
                         // 底板画在本层: 裁圆 + 模糊 + 中性色, 阴影由本层出 (内部那层阴影被裁掉了)
                         modifier = Modifier
                             .graphicsLayer {
