@@ -16,7 +16,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -47,7 +46,6 @@ import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
@@ -67,7 +65,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -137,7 +134,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LinearProgressIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.MoreMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.OutlinedIconTextButton
-import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
@@ -606,9 +602,6 @@ private val ForumFabSize = 56.dp
 /** 刷新键抬高的行程: 贴着底栏时单手要往下探才够着, 抬到拇指自然落点 (键心离屏幕底约 200dp). */
 private val ForumFabLift = 136.dp
 
-/** 底板阴影, 与导航坞一致. */
-private val ForumFabShadowElevation = 6.dp
-
 @Composable
 private fun ForumFAB(
     modifier: Modifier = Modifier,
@@ -633,15 +626,6 @@ private fun ForumFAB(
     // Anchor both the menu and the toggle animation to the same edge as the scaffold.
     val horizontalAlignment = if (position == FabPosition.Start) Alignment.Start else Alignment.End
     val buttonAlignment = if (position == FabPosition.Start) Alignment.TopStart else Alignment.TopEnd
-
-    // 低栏那套基调 (navigationContainer 就是 surfaceContainer) + 一点透, 不挂模糊.
-    // 基调别再选暗: surfaceContainerHighest 比页面底暗十几档, 铺在小圆上自己就是一块灰斑.
-    // 也不挂 haze: TbHazeState 的 inputScale 是 Fixed(0.033f) —— 底栏那种大条够用, 56dp 的键换算是
-    // 136px * 0.033 ~= 4px 的纹理再拉回 136px, 双线性放大出来是一团边缘发虚的亮块, 形状跟着纹理走
-    // 不跟着圆走 (真机截图实测: 圆里一个八边形亮斑把粗体字盖住, 圈外反而是正常的透字灰).
-    // 键太小, 模糊只会糊成一坨; 透出一点影子的中性板就够了.
-    val plateColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.85f)
-    val plateContentColor = MaterialTheme.colorScheme.onSurface
 
     BackHandler(enabled = expanded) { onExpandChanged(false) }
 
@@ -671,38 +655,27 @@ private fun ForumFAB(
                         checked = expanded,
                         onCheckedChange = { click() },
                         contentAlignment = buttonAlignment,
-                        containerColor = { Color.Transparent },
-                        // 底板画在本层: 裁圆 + 中性色, 阴影由本层出 (内部那层的阴影被裁掉了)
-                        modifier = Modifier
-                            .graphicsLayer {
-                                shape = CircleShape
-                                clip = true
-                                shadowElevation = ForumFabShadowElevation.toPx()
-                            }
-                            .background(color = plateColor, shape = CircleShape),
                     ) {
-                        ProvideContentColor(plateContentColor) {
-                            // Keep gestures on the content while the container animates like the
-                            // original toggle FAB when the menu opens and closes.
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .combinedClickable(
-                                        role = Role.Button,
-                                        onClickLabel = stringResource(if (expanded) R.string.btn_close else R.string.btn_refresh),
-                                        onLongClickLabel = stringResource(R.string.forum_fab_open_menu),
-                                        hapticFeedbackEnabled = false,
-                                        onLongClick = { onExpandChanged(true) },
-                                        onClick = click,
-                                    ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    imageVector = if (expanded) Icons.Rounded.Close else Icons.Rounded.Refresh,
-                                    contentDescription = stringResource(if (expanded) R.string.btn_close else R.string.btn_refresh),
-                                    modifier = Modifier.animateIcon({ checkedProgress }),
-                                )
-                            }
+                        // Keep gestures on the content while the container animates like the
+                        // original toggle FAB when the menu opens and closes.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .combinedClickable(
+                                    role = Role.Button,
+                                    onClickLabel = stringResource(if (expanded) R.string.btn_close else R.string.btn_refresh),
+                                    onLongClickLabel = stringResource(R.string.forum_fab_open_menu),
+                                    hapticFeedbackEnabled = false,
+                                    onLongClick = { onExpandChanged(true) },
+                                    onClick = click,
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = if (expanded) Icons.Rounded.Close else Icons.Rounded.Refresh,
+                                contentDescription = stringResource(if (expanded) R.string.btn_close else R.string.btn_refresh),
+                                modifier = Modifier.animateIcon({ checkedProgress }),
+                            )
                         }
                     }
                 } else {
