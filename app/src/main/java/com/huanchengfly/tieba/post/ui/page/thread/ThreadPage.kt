@@ -1018,8 +1018,9 @@ fun ThreadPage(
                                                         CardHorizontalSpacing
                                                 )
                                     )
-                                    // 随心握: 左手握时整只坞从右边挪到左边 (右手握时它本来就在右手边)
-                                    .gripDock(GripEdgeInset)
+                                    // 随心握: 左手握时整只坞从右边挪到左边.
+                                    // 父级那条 padding(end) 已经从可用宽度里吃掉一份端距, 这里只补剩下那份
+                                    .gripDock(inset = GripEdgeInset / 2)
                                     .padding(end = CardHorizontalSpacing),
                                 horizontal = false,
                                 singleKey = LocalUISettings.current.commentNavSingleKey,

@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -42,9 +43,11 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
@@ -64,6 +67,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -99,6 +103,7 @@ import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
 import com.huanchengfly.tieba.post.ui.models.forum.GoodClassify
@@ -130,9 +135,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultToggleFloatingActionButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.LinearProgressIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.MoreMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.OutlinedIconTextButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
@@ -595,6 +602,15 @@ private fun ForumSubtitle(modifier: Modifier = Modifier, forum: ForumData) {
     }
 }
 
+/** 刷新键的直径 (M3 FAB 的标准尺寸). 随心握停靠时按它对齐, 菜单容器比它宽, 按容器对齐键会缩进去一截. */
+private val ForumFabSize = 56.dp
+
+/** 刷新键抬高的行程: 贴着底栏时单手要往下探才够着, 抬到拇指自然落点 (键心离屏幕底约 200dp). */
+private val ForumFabLift = 136.dp
+
+/** 底板阴影, 与导航坞一致. */
+private val ForumFabShadowElevation = 6.dp
+
 @Composable
 private fun ForumFAB(
     modifier: Modifier = Modifier,
@@ -620,12 +636,33 @@ private fun ForumFAB(
     val horizontalAlignment = if (position == FabPosition.Start) Alignment.Start else Alignment.End
     val buttonAlignment = if (position == FabPosition.Start) Alignment.TopStart else Alignment.TopEnd
 
+    // 低栏那套配色: 中性底板 + 实时模糊, 实心的 primary 会把帖子压在键底下影响阅读.
+    // 有 haze 时底板自身透明, 模糊层已经带了 surfaceContainerHighest 的中性色调;
+    // 没有 haze (半透明主题/减弱效果) 时退回一块半透明中性板.
+    val hazeState = LocalHazeState.current
+    val plateColor = if (hazeState != null) {
+        Color.Transparent
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f)
+    }
+    val plateContentColor = MaterialTheme.colorScheme.onSurface
+    val plateShape = FloatingActionButtonDefaults.shape
+
     BackHandler(enabled = expanded) { onExpandChanged(false) }
 
     AnimatedVisibility(
         visible = visible,
-        // 随心握: 左手握时整摞 (键 + 展开的菜单) 从右边挪到左边; 宽屏上键本来就摆在 Start 边, 方向跟着翻
-        modifier = modifier.gripDock(GripEdgeInset, atEnd = position != FabPosition.Start),
+        // 随心握: 左手握时整摞 (键 + 展开的菜单) 从右边挪到左边; 宽屏上键本来就摆在 Start 边, 方向跟着翻.
+        // visualWidth: 菜单容器比键宽一大截 (键在里头居中), 按容器边对齐会让键多进去 ~19dp,
+        // 所以按键自己的 56dp 对齐, 落点才和列表正文的 16dp 边距齐平.
+        // 抬高用 offset 而不是 padding: 两种 Scaffold 布局算法对节点高度的取法不同, padding 的行程会被打折.
+        modifier = modifier
+            .gripDock(
+                inset = GripEdgeInset,
+                visualWidth = ForumFabSize,
+                atEnd = position != FabPosition.Start,
+            )
+            .offset(y = -ForumFabLift),
         enter = fadeIn() + slideInHorizontally { it },
         exit = fadeOut() + slideOutHorizontally { it }
     ) {
@@ -639,27 +676,40 @@ private fun ForumFAB(
                         checked = expanded,
                         onCheckedChange = { click() },
                         contentAlignment = buttonAlignment,
+                        containerColor = { plateColor },
+                        // 模糊层是方的, 得按键自己的形状裁一圈; 阴影由本层出, 内部那层被裁掉了
+                        modifier = Modifier
+                            .graphicsLayer {
+                                shape = plateShape
+                                clip = true
+                                shadowElevation = ForumFabShadowElevation.toPx()
+                            }
+                            .withNonNull(hazeState) {
+                                Modifier.defaultHazeEffect(style = navigationHazeStyle)
+                            },
                     ) {
-                        // Keep gestures on the content while the container animates like the
-                        // original toggle FAB when the menu opens and closes.
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .combinedClickable(
-                                    role = Role.Button,
-                                    onClickLabel = stringResource(if (expanded) R.string.btn_close else R.string.btn_refresh),
-                                    onLongClickLabel = stringResource(R.string.forum_fab_open_menu),
-                                    hapticFeedbackEnabled = false,
-                                    onLongClick = { onExpandChanged(true) },
-                                    onClick = click,
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = if (expanded) Icons.Rounded.Close else Icons.Rounded.Refresh,
-                                contentDescription = stringResource(if (expanded) R.string.btn_close else R.string.btn_refresh),
-                                modifier = Modifier.animateIcon({ checkedProgress }),
-                            )
+                        ProvideContentColor(plateContentColor) {
+                            // Keep gestures on the content while the container animates like the
+                            // original toggle FAB when the menu opens and closes.
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .combinedClickable(
+                                        role = Role.Button,
+                                        onClickLabel = stringResource(if (expanded) R.string.btn_close else R.string.btn_refresh),
+                                        onLongClickLabel = stringResource(R.string.forum_fab_open_menu),
+                                        hapticFeedbackEnabled = false,
+                                        onLongClick = { onExpandChanged(true) },
+                                        onClick = click,
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = if (expanded) Icons.Rounded.Close else Icons.Rounded.Refresh,
+                                    contentDescription = stringResource(if (expanded) R.string.btn_close else R.string.btn_refresh),
+                                    modifier = Modifier.animateIcon({ checkedProgress }),
+                                )
+                            }
                         }
                     }
                 } else {

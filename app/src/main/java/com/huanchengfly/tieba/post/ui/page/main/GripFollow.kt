@@ -146,25 +146,36 @@ internal fun Modifier.gripFollow(availableWidthPx: Int): Modifier {
  * 悬浮键的随心握: 左手握时把整只键从它贴着的右边挪到屏幕左边, 和底栏同一条弹簧.
  *
  * 只挪一档 (键自带的那点边距) 等于没动 —— 键贴在右手边, 左手握时要够到它得跨过整块屏, 所以这里
- * 走满行程挪到对侧, 到位后留白跟原来右边那份一样多, 出不了屏.
+ * 走满行程挪到对侧, 到位后离屏幕左边 [inset].
  *
  * 右手握时原地不动: 键本来就在右手边. 键已经摆在 Start 边 (宽屏/折叠屏的 FAB 位置) 时同样不动 ——
  * 往右挪等于挪出屏幕.
  *
- * @param inset 键在右边自带的留白, 挪到左边后照抄一份
+ * [visualWidth] 是"真正要露出来的那块"有多宽: 论坛刷新键外面套的菜单容器比键本身宽 (收起的菜单项
+ * 仍然占位), 键在容器里居中, 按容器对齐就会比正文边距多进去小半个键.
+ *
+ * @param inset 到位后离屏幕对侧留多少, 与列表正文的边距一致
+ * @param visualWidth 键自己实际的宽度; 容器和键一样宽时不用传
  * @param atEnd 键是否贴 End 边 (LTR 的右边); 调用方按自己的摆放位置传, false 时这个修饰符不做事
  */
 @Composable
-internal fun Modifier.gripDock(inset: Dp, atEnd: Boolean = true): Modifier {
+internal fun Modifier.gripDock(
+    inset: Dp = GripEdgeInset,
+    visualWidth: Dp? = null,
+    atEnd: Boolean = true,
+): Modifier {
     if (!LocalGripAvailable.current || !atEnd) return this
     val bias = LocalGripBias.current
-    val insetPx = with(LocalDensity.current) { inset.toPx() }
+    val density = LocalDensity.current
+    val gapPx = with(density) { inset.toPx() } * 2f
+    val visualPx = visualWidth?.let { with(density) { it.toPx() } }
     return this then Modifier.layout { measurable, constraints ->
         val placeable = measurable.measure(constraints)
         layout(placeable.width, placeable.height) {
             if (constraints.hasBoundedWidth) {
-                val travel =
-                    (constraints.maxWidth - placeable.width - insetPx * 2f).coerceAtLeast(0f)
+                // 键在容器里居中的话, 要对齐的是容器中心而不是容器左边
+                val box = visualPx?.let { (placeable.width + it) / 2f } ?: placeable.width.toFloat()
+                val travel = (constraints.maxWidth - box - gapPx).coerceAtLeast(0f)
                 placeable.placeRelative(x = (travel * bias().coerceAtMost(0f)).roundToInt(), y = 0)
             } else {
                 placeable.placeRelative(0, 0)
