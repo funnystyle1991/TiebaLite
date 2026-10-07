@@ -636,13 +636,14 @@ private fun ForumFAB(
     val horizontalAlignment = if (position == FabPosition.Start) Alignment.Start else Alignment.End
     val buttonAlignment = if (position == FabPosition.Start) Alignment.TopStart else Alignment.TopEnd
 
-    // 低栏那套配色: 中性底板 + 实时模糊, 实心的 primary 会把帖子压在键底下影响阅读.
-    // 底板自己画 (不用 FAB 的 containerColor): FAB 自己的形状是圆角方形, 贴在正文上就是一块 tab;
-    // 圆键才像个键. 有模糊时只补薄薄一层中性色, 没模糊 (半透明主题/减弱效果) 时得靠这层板撑住图标.
+    // 低栏那套: 用底栏自己的基调 (navigationContainer 就是 surfaceContainer) + 一点透.
+    // 上一版脏是因为基调就选暗了: surfaceContainerHighest 比页面底暗 ~17 档, 铺在键上自己就是一块灰斑
+    // (真机实测键心 222 / 页面底 248). 底栏在同一路内容上实测渲染成 #F8F7FC, 几乎跟页面底同色.
+    // 模糊走 ThreadNavigationDock 那套被验过的 defaultHazeEffect (默认风格, 不带 tint);
+    // 不用 navigationHazeStyle —— 它自带 0.7 灰调 + 噪点, 56dp 的小圆采样到的只有上下两行字.
+    // 板子给 0.85: 小键经不起真透, 透出一点影子就够了, 图标才立得住.
     val hazeState = LocalHazeState.current
-    val plateColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(
-        alpha = if (hazeState != null) 0.35f else 0.86f
-    )
+    val plateColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.85f)
     val plateContentColor = MaterialTheme.colorScheme.onSurface
 
     BackHandler(enabled = expanded) { onExpandChanged(false) }
@@ -682,7 +683,7 @@ private fun ForumFAB(
                                 shadowElevation = ForumFabShadowElevation.toPx()
                             }
                             .withNonNull(hazeState) {
-                                Modifier.defaultHazeEffect(style = navigationHazeStyle)
+                                Modifier.defaultHazeEffect()
                             }
                             .background(color = plateColor, shape = CircleShape),
                     ) {
